@@ -8,7 +8,7 @@ Dawson Ren, 11/14/22
 from typing import List
 import numpy as np
 
-from src.ProblemInstance.ProblemInstance import ProblemInstance as PI
+from ProblemInstance.ProblemInstance import ProblemInstance as PI
 
 def parseLine(line: str, path: str, i: int) -> List[float]:
     try:
@@ -75,5 +75,5 @@ def loadProblemInstance(path: str) -> PI:
         if len(Y) != n:
             raise Exception(f'Dimensions of P and Y don\'t match in file: {path}, line {i}')
 
-    pi = PI(np.array(P), np.array(Q), np.array(r), np.array(Y))
+    pi = PI(np.array(P, dtype=np.float64), np.array(Q, dtype=np.float64), np.array(r, dtype=np.float64), np.array(Y, dtype=np.int8))
     return pi

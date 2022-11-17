@@ -1,13 +1,13 @@
 '''
-Unit testing for ProblemInstance.
+Unit testing for ProblemReader.
 '''
 import numpy as np
 import unittest
-from src.ProblemReader.ProblemReader import loadProblemInstance
+from ProblemReader.ProblemReader import loadProblemInstance
 
 class TestProblemReader(unittest.TestCase):
     def test1_data(self):
-        pi = loadProblemInstance('src/ProblemReader/tests/test1_data.txt')
+        pi = loadProblemInstance('tests/test1_data.txt')
 
         np.testing.assert_allclose(pi.P, np.array([[0.5, 0.25, 0.5],
                                                    [0.75, 0.5, 0.9],
