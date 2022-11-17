@@ -10,10 +10,14 @@ import numpy as np
 
 from ProblemInstance.ProblemInstance import ProblemInstance as PI
 
-def parseLine(line: str, path: str, i: int) -> List[float]:
+def parseLine(line: str, path: str, i: int, prob: bool = False) -> List[float]:
     try:
-        return [float(num) for num in line.split(',')]
-    except:
+        floats = [float(num) for num in line.split(',')]
+        if prob:
+            for f in floats:
+                if f > 1: raise Exception(f'Not possible to have probability greater than 1 in file: {path}, line {i}')
+        return floats
+    except ValueError:
         raise Exception(f'Failed to parse a value in file: {path}, line {i}')
 
 def loadProblemInstance(path: str) -> PI:
@@ -27,7 +31,7 @@ def loadProblemInstance(path: str) -> PI:
     with open(path, 'r') as file:
         i = 1
         while (line := file.readline().strip()) != '':
-            line_nums = parseLine(line, path, i)
+            line_nums = parseLine(line, path, i, True)
             if m is None:
                 m = len(line_nums)
             elif m != len(line_nums):
@@ -40,7 +44,7 @@ def loadProblemInstance(path: str) -> PI:
         i += 1
 
         while (line := file.readline().strip()) != '':
-            line_nums = parseLine(line, path, i)
+            line_nums = parseLine(line, path, i, True)
             if m != len(line_nums):
                 raise Exception(f'Uneven line length found while loading problem in file: {path}, line {i}')
 
