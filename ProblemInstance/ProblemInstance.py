@@ -33,7 +33,7 @@ class ProblemInstance:
 
     def _lookup(self, nurse: int, Z: np.ndarray) -> Union[float, None]:
         # lookup from cache
-        key = (nurse, self._serializeArray)
+        key = (nurse, self._serializeArray(Z))
         if key in self.cache:
             return self.cache[key]
         else:
@@ -73,6 +73,11 @@ class ProblemInstance:
         if nurse >= self.m:
             return 0
 
+        # lookup from cache
+        lookup = self._lookup(nurse, Z)
+        if lookup is not None:
+            return lookup
+
         # print(f'Starting for nurse {nurse} and with availability matrix\n{Z}')
 
         # recursive case
@@ -89,6 +94,8 @@ class ProblemInstance:
             fut_exp_rev = self._expectedRevenueLoop(nurse + 1, self._eliminateShifts(c, Z))
             # print(f'Got future return {fut_exp_rev}')
             expected_rev += p * (imm_exp_rev + fut_exp_rev)
+
+        self._cache(nurse, Z, expected_rev)
 
         return expected_rev
 
