@@ -25,7 +25,7 @@ def loadProblemInstance(path: str) -> PI:
     m = n = None
     P = []
     Q = []
-    r = []
+    R = []
     Y = []
 
     with open(path, 'r') as file:
@@ -60,8 +60,11 @@ def loadProblemInstance(path: str) -> PI:
             if m != len(line_nums):
                 raise Exception(f'Uneven line length found while loading problem in file: {path}, line {i}')
 
-            r = line_nums
+            R.append(line_nums)
             i += 1
+
+        if len(Q) not in [1, n]:
+            raise Exception(f'Dimensions of P and Q don\'t match in file: {path}, line {i}')
 
         i += 1
 
@@ -79,5 +82,5 @@ def loadProblemInstance(path: str) -> PI:
         if len(Y) != n:
             raise Exception(f'Dimensions of P and Y don\'t match in file: {path}, line {i}')
 
-    pi = PI(np.array(P, dtype=np.float64), np.array(Q, dtype=np.float64), np.array(r, dtype=np.float64), np.array(Y, dtype=np.int8))
+    pi = PI(np.array(P, dtype=np.float64), np.array(Q, dtype=np.float64), np.array(R, dtype=np.float64), np.array(Y, dtype=np.int8))
     return pi

@@ -12,12 +12,31 @@ import itertools
 class ProblemInstance:
     def __init__(self, P: np.ndarray, Q: np.ndarray, r: np.ndarray, Y: np.ndarray) -> None:
         self.P = P
-        self.Q = Q
-        self.r = r
-        self.Y = Y
-
         self.m, self.n = P.shape
+        self.Q = Q
+        self.R = self._expandRevenue(r)
+        self.Y = Y
+        self.A = self._calculateAvailability()
+
         self.cache = dict()
+
+    def _expandRevenue(self, r: np.ndarray) -> np.ndarray:
+        if r.shape == self.P.shape:
+            return r
+        
+        R = np.tile(r, (self.n, 1))
+        return R
+
+    def _calculateAvailability(self) -> np.ndarray:
+        A = np.zeros((self.m, self.n))
+
+        # the first row is simply the first row of Y
+        A[0, :] = self.Y[0, :]
+
+        for i in range(1, self.m):
+            A[i, :] = 1 - self.Y[i - 1, :] * self.P[i - 1, :] * A[i - 1, :]
+
+        return A
 
     def _serializeArray(self, A: np.ndarray) -> bytes:
         # convert to bytes
@@ -73,33 +92,44 @@ class ProblemInstance:
         if nurse >= self.m:
             return 0
 
+        print(f'Starting for nurse {nurse} and with availability matrix\n{Z}')
+
         # lookup from cache
         lookup = self._lookup(nurse, Z)
         if lookup is not None:
+            print(f'Lookup found value of {lookup}, returning.')
             return lookup
-
-        # print(f'Starting for nurse {nurse} and with availability matrix\n{Z}')
 
         # recursive case
         expected_rev = 0
 
         for c in self._getPossibleAssignments(nurse, Z):
-            # print(f'With assignment {c} for nurse {nurse}')
+            print(f'With assignment {c} for nurse {nurse}, ', end='')
             p = self._getAssignmentProbability(nurse, c)
-            # print(f'Got probability {p}')
+            print(f'Got probability {p}, ', end='')
             # immediate expected revenue
             imm_exp_rev = sum([self.Q[nurse, j] * self.r[j] * max(cj, 0) for j, cj in enumerate(c)])
-            # print(f'Got immediate return {imm_exp_rev}')
+            print(f'Got immediate return {imm_exp_rev}.')
             # future expected revenue for all nurses afterwards
+            print(f'Recursing downwards to next nurse.')
             fut_exp_rev = self._expectedRevenueLoop(nurse + 1, self._eliminateShifts(c, Z))
-            # print(f'Got future return {fut_exp_rev}')
+            print(f'Got future return {fut_exp_rev}.')
             expected_rev += p * (imm_exp_rev + fut_exp_rev)
 
         self._cache(nurse, Z, expected_rev)
 
         return expected_rev
 
-    def expectedRevenue(self) -> float:
+    def expectedRevenueOld(self) -> float:
         Z = self.Y.copy()
 
+        print('\nStarting calculations...\n')
+        print(f'Using matrix P = \n{self.P}')
+        print(f'Using matrix Q = \n{self.Q}')
+        print(f'Using vector r = \n{self.r}')
+        print(f'Using matrix Y = \n{self.Y}')
+
         return self._expectedRevenueLoop(0, Z)
+
+    def expectedRevenue(self) -> float:
+        return (self.R * self.P * self.Q * self.Y * self.A).sum()
