@@ -10,13 +10,11 @@ from typing import Union, Tuple, Generator
 import itertools
 
 class ProblemInstance:
-    def __init__(self, P: np.ndarray, Q: np.ndarray, r: np.ndarray, Y: np.ndarray) -> None:
+    def __init__(self, P: np.ndarray, Q: np.ndarray, r: np.ndarray) -> None:
         self.P = P
         self.m, self.n = P.shape
         self.Q = Q
         self.R = self._expandRevenue(r)
-        self.Y = Y
-        self.A = self._calculateAvailability()
 
         self.cache = dict()
 
@@ -26,17 +24,6 @@ class ProblemInstance:
         
         R = np.tile(r, (self.n, 1))
         return R
-
-    def _calculateAvailability(self) -> np.ndarray:
-        A = np.zeros((self.m, self.n))
-
-        # the first row is simply the first row of Y
-        A[0, :] = self.Y[0, :]
-
-        for i in range(1, self.m):
-            A[i, :] = 1 - self.Y[i - 1, :] * self.P[i - 1, :] * A[i - 1, :]
-
-        return A
 
     def _serializeArray(self, A: np.ndarray) -> bytes:
         # convert to bytes
@@ -108,7 +95,7 @@ class ProblemInstance:
             p = self._getAssignmentProbability(nurse, c)
             print(f'Got probability {p}, ', end='')
             # immediate expected revenue
-            imm_exp_rev = sum([self.Q[nurse, j] * self.r[j] * max(cj, 0) for j, cj in enumerate(c)])
+            imm_exp_rev = sum([self.Q[nurse, j] * self.R[nurse, j] * max(cj, 0) for j, cj in enumerate(c)])
             print(f'Got immediate return {imm_exp_rev}.')
             # future expected revenue for all nurses afterwards
             print(f'Recursing downwards to next nurse.')
@@ -120,16 +107,31 @@ class ProblemInstance:
 
         return expected_rev
 
-    def expectedRevenueOld(self) -> float:
-        Z = self.Y.copy()
+    def _expectedRevenueOld(self, Y: np.ndarray) -> float:
+        Z = Y.copy()
 
         print('\nStarting calculations...\n')
         print(f'Using matrix P = \n{self.P}')
         print(f'Using matrix Q = \n{self.Q}')
-        print(f'Using vector r = \n{self.r}')
-        print(f'Using matrix Y = \n{self.Y}')
+        print(f'Using vector r = \n{self.R}')
+        print(f'Using matrix Y = \n{Y}')
 
         return self._expectedRevenueLoop(0, Z)
 
-    def expectedRevenue(self) -> float:
-        return (self.R * self.P * self.Q * self.Y * self.A).sum()
+    def _calculateAvailability(self, Y: np.ndarray) -> np.ndarray:
+        A = np.zeros((self.m, self.n))
+
+        # the first row is simply the first row of Y
+        A[0, :] = Y[0, :]
+
+        for i in range(1, self.m):
+            A[i, :] = 1 - Y[i - 1, :] * self.P[i - 1, :] * A[i - 1, :]
+
+        return A
+
+    def expectedRevenue(self, Y: np.ndarray) -> float:
+        if Y.shape != (self.m, self.n):
+            raise Exception('ProblemInstance: policy Y is of wrong shape')
+
+        A = self._calculateAvailability(Y)
+        return (self.R * self.P * self.Q * Y * A).sum()

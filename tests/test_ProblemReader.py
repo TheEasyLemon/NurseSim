@@ -18,9 +18,6 @@ class TestProblemReader(unittest.TestCase):
         np.testing.assert_allclose(pi.R, np.array([[4, 10, 3.5],
                                                    [4, 10, 3.5],
                                                    [4, 10, 3.5]]))
-        np.testing.assert_allclose(pi.Y, np.array([[1, 1, 0],
-                                                   [1, 1, 1],
-                                                   [0, 0, 1]]))
 
     def test2_data(self):
         pi = loadProblemInstance('tests/test2_data.txt')
@@ -34,9 +31,6 @@ class TestProblemReader(unittest.TestCase):
         np.testing.assert_allclose(pi.R, np.array([[4, 10, 3.5],
                                                    [5, 3, 6],
                                                    [7, 2, 4]]))
-        np.testing.assert_allclose(pi.Y, np.array([[1, 0, 0],
-                                                   [0, 1, 0],
-                                                   [0, 0, 1]]))
 
 if __name__ == '__main__':
     unittest.main()

@@ -26,7 +26,6 @@ def loadProblemInstance(path: str) -> PI:
     P = []
     Q = []
     R = []
-    Y = []
 
     with open(path, 'r') as file:
         i = 1
@@ -68,19 +67,5 @@ def loadProblemInstance(path: str) -> PI:
 
         i += 1
 
-        while (line := file.readline().strip()) != '':
-            line_nums = parseLine(line, path, i)
-            if m != len(line_nums):
-                raise Exception(f'Uneven line length found while loading problem in file: {path}, line {i}')
-
-            if not all(map(lambda n: n in [0, 1], line_nums)):
-                raise Exception(f'Only binary values allowed in Y matrix, file: {path}, line {i}')
-
-            Y.append(line_nums)
-            i += 1
-
-        if len(Y) != n:
-            raise Exception(f'Dimensions of P and Y don\'t match in file: {path}, line {i}')
-
-    pi = PI(np.array(P, dtype=np.float64), np.array(Q, dtype=np.float64), np.array(R, dtype=np.float64), np.array(Y, dtype=np.int8))
+    pi = PI(np.array(P, dtype=np.float64), np.array(Q, dtype=np.float64), np.array(R, dtype=np.float64))
     return pi
