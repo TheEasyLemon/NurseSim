@@ -13,8 +13,6 @@ We provide test cases as a text file under the tests subfolder for every directo
 <Q matrix>
 
 <r vector>
-
-<Y matrix>
 ```
 Each matrix is delimited with commas. Each row is delimited by newlines. There is a break between every matrix/vector. The number of nurses and open shifts is inferred from the `P` matrix, and violations will be raised in the middle of parsing the file.
 
