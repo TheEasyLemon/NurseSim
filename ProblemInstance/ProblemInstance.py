@@ -10,13 +10,18 @@ from typing import Union, Tuple, Generator
 import itertools
 
 class ProblemInstance:
-    def __init__(self, P: np.ndarray, Q: np.ndarray, R: np.ndarray) -> None:
+    def __init__(self, P: np.ndarray, Q: np.ndarray, R: np.ndarray, N: np.ndarray) -> None:
         self.P = P
         self.m, self.n = P.shape
         self.Q = Q
         self.R = self._expandRevenue(R)
+        self.N = N
         self.V = self.R * self.P * self.Q  # value matrix
-        self.A = np.zeros((self.m, self.n)) # availability matrix
+
+        # values that will be precalculated later during the expected revenue step
+        self.PY = np.zeros((self.m, self.n)) # the elementwise product of P and Y (the policy matrix)
+        self.A0 = np.zeros((self.m, self.n)) # the probability that no nurses are scheduled
+        self.A1 = np.zeros((self.m, self.n)) # the probability that one nurse is scheduled
 
         self.cache = dict()
 
@@ -41,54 +46,69 @@ class ProblemInstance:
 
     def _lookup(self, shift: int, y: np.ndarray) -> Union[float, None]:
         # lookup from cache
+        # SOMETHING IS GOING WRONG HERE! Non-unique keys?
         key = (shift, self._serializeArray(y))
+        # return None
         if key in self.cache:
             return self.cache[key]
         else:
             return None
 
-    def _calculateAvailability(self, Y: np.ndarray) -> np.ndarray:
-        # the first row is simply the first row of Y
-        self.A[0, :] = Y[0, :]
+    def _pre_calculate(self, Y: np.ndarray) -> None:
+        self.PY = self.P * Y
+        one_minus_PY = 1 - self.PY
+        self.A0[0, :] = 1 # shifts are always available for the first nurse
+        self.A1[[0, 1], :] = 1 # shifts are always available for the first and second
 
+        # for every nurse, populate A0
         for i in range(1, self.m):
-            self.A[i, :] = 1 - Y[i - 1, :] * self.P[i - 1, :] * self.A[i - 1, :]
+            self.A0[i, :] = self.A0[i - 1, :] * one_minus_PY[i - 1, :]
+
+        # for every nurse, populate A1
+        for i in range(2, self.m):
+            # for every nurse
+            for j in range(self.n):
+                prob = 0
+                for k in range(0, i - 1):
+                    mult_prob = 1
+                    for l in range(0, i - 1):
+                        if l != k:
+                            mult_prob *= 1 - self.P[l, j] * Y[l, j]
+
+                    prob += mult_prob * self.P[k, j] * Y[k, j]
+
+                self.A1[i, j] = prob
 
     def _calculateAvailabilityCol(self, shift: int, y: np.ndarray) -> np.ndarray:
         A_col = np.zeros((self.m,))
         A_col[0] = y[0]
 
         for i in range(1, self.m):
-            A_col[i] = 1 - y[i - 1] * self.P[i - 1, shift] * A_col[i - 1]
+            A_col[i] = (1 - y[i - 1] * self.P[i - 1, shift]) * A_col[i - 1]
 
         return A_col
-
-    def expectedRevenueSlow(self, Y: np.ndarray) -> float:
-        if Y.shape != (self.m, self.n):
-            raise Exception('ProblemInstance: policy Y is of wrong shape')
-
-        self._calculateAvailability(Y)
-        return (self.V * Y * self.A).sum()
 
     def expectedRevenueCol(self, shift: int, y: np.ndarray) -> float:
         if y.shape[0] != self.m:
             raise Exception(f'ProblemInstance: policy column y is of wrong shape, got {y.shape}')
 
-        expectedRevenue = 0
-
         lookup = self._lookup(shift, y)
         if lookup is None:
             expectedRevenueCol = (self.V[:, shift] * y * self._calculateAvailabilityCol(shift, y)).sum()
-            expectedRevenue += expectedRevenueCol
             self._cache(shift, y, expectedRevenueCol)
+            return expectedRevenueCol
         else:
-            expectedRevenue += lookup
+            return lookup
 
-        return expectedRevenue
-        
-
-    def expectedRevenue(self, Y: np.ndarray) -> float:
+    def expectedRevenue(self, Y: np.ndarray, pre_calc=False) -> float:
         if Y.shape != (self.m, self.n):
             raise Exception('ProblemInstance: policy Y is of wrong shape')
+
+        if pre_calc:
+            self._pre_calculate(Y)
+            # print(self.A1)
+            # print(Y)
+            # print(self.P)
+            return (self.V * Y * (self.A0 + self.A1)).sum()
         
         return sum([self.expectedRevenueCol(j, Y[:, j]) for j in range(self.n)])

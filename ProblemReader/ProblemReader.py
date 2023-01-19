@@ -26,6 +26,7 @@ def loadProblemInstance(path: str) -> PI:
     P = []
     Q = []
     R = []
+    N = []
 
     with open(path, 'r') as file:
         i = 1
@@ -62,10 +63,21 @@ def loadProblemInstance(path: str) -> PI:
             R.append(line_nums)
             i += 1
 
-        if len(Q) not in [1, n]:
-            raise Exception(f'Dimensions of P and Q don\'t match in file: {path}, line {i}')
+        if len(R) not in [1, n]:
+            raise Exception(f'Dimensions of P and R don\'t match in file: {path}, line {i}')
 
         i += 1
 
-    pi = PI(np.array(P, dtype=np.float64), np.array(Q, dtype=np.float64), np.array(R, dtype=np.float64))
+        while (line := file.readline().strip()) != '':
+            line_nums = parseLine(line, path, i)
+            if m != len(line_nums):
+                raise Exception(f'Uneven line length found while loading problem in file: {path}, line {i}')
+
+            N.append(line_nums)
+            i += 1
+
+        if len(N) != 1:
+            raise Exception(f'Number of nurses per shift should only specify per shift: {path}, line {i}')
+
+    pi = PI(np.array(P, dtype=np.float64), np.array(Q, dtype=np.float64), np.array(R, dtype=np.float64), np.array(N, dtype=np.int64))
     return pi
