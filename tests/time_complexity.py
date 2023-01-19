@@ -13,13 +13,13 @@ from ProblemInstance.ProblemInstance import ProblemInstance
 from ProblemSolver.ProblemSolver import ProblemSolver
 
 # nxn problem size for expected revenue
-ER_SIZES = np.array([10, 50, 100, 250, 500])
+ER_SIZES = np.array([3, 5, 10, 13, 15])
 # nxn problem size for optimal solution
 OPT_SIZES = np.array([3, 4, 5, 6, 7, 8, 9, 10])
 # how many policies we test with a given ProblemInstance
-REPEATS = 10
+REPEATS = 5
 # how many ProblemInstances we test
-LOOPS = 5
+LOOPS = 3
 
 def test_function(title: str, func, sizes: List[int]) -> None:
     avg_times = []
@@ -36,7 +36,7 @@ def test_function(title: str, func, sizes: List[int]) -> None:
             P = np.random.rand(m, n)
             Q = np.random.rand(m, n)
             R = np.random.rand(m, n) * 10
-            N = np.ones((1, n))
+            N = np.random.randint(1, m, size=(n, ))
             pi = ProblemInstance(P, Q, R, N)
 
             for _ in range(REPEATS):

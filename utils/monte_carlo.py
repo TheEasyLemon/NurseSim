@@ -67,6 +67,7 @@ def monte_carlo_expected_revenue(pi: ProblemInstance, Y: np.ndarray, alpha: floa
 
     estimate /= N
 
-    print(f'Estimated to be within [{estimate} +/- {e * h}] with {(1 - alpha) * 100}% confidence, exact method predicts {pi.expectedRevenue(Y, pre_calc=False)}')
+    print(f'Estimated to be within [{estimate} +/- {e * h}] with {(1 - alpha) * 100}% confidence, exact method predicts {pi.expectedRevenue(Y)}')
+
 
 
