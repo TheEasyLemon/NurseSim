@@ -79,5 +79,5 @@ def loadProblemInstance(path: str) -> PI:
         if len(N) != 1:
             raise Exception(f'Number of nurses per shift should only specify per shift: {path}, line {i}')
 
-    pi = PI(np.array(P, dtype=np.float64), np.array(Q, dtype=np.float64), np.array(R, dtype=np.float64), np.array(N, dtype=np.int64))
+    pi = PI(np.array(P, dtype=np.float64), np.array(Q, dtype=np.float64), np.array(R, dtype=np.float64), np.array(N, dtype=np.int64).flatten())
     return pi

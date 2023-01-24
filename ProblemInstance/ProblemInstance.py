@@ -41,7 +41,6 @@ class ProblemInstance:
 
     def _lookup(self, shift: int, y: np.ndarray) -> Union[float, None]:
         # lookup from cache
-        # SOMETHING IS GOING WRONG HERE! Non-unique keys?
         key = (shift, self._serializeArray(y))
         if key in self.cache:
             return self.cache[key]
@@ -51,10 +50,12 @@ class ProblemInstance:
     def _calculateAvailabilityCol(self, shift: int, y: np.ndarray) -> np.ndarray:
         N = self.N[shift]
         A = np.triu(np.ones((y.size, N)), 0) # the row gives the nurse, the column gives the availability when j shifts allowed
-        Py = self.P[:, shift] * y # the elementwise product of the col of P corresponding to this shift and y
-        # Assume that Py has no values equal to 1 (or else divide by zero!)
-        flip = Py / (1 - Py) # given a state where index i is not scheduled, multiply by this to switch to a state
-                             # where i is scheduled
+        Py = self.P[:, shift] * y.ravel() # the elementwise product of the col of P corresponding to this shift and y
+        
+        # let infs happen when we divide by 0
+        with np.errstate(divide='ignore'):
+            flip = Py / (1 - Py) # given a state where index i is not scheduled, multiply by this to switch to a state
+                                 # where i is scheduled
 
         # first fill in 0th column of A
         for i in range(1, self.m):
@@ -74,6 +75,12 @@ class ProblemInstance:
         A_col[:N] = 1 # first N nurses get availability 1
        
         return A_col
+    
+    def calculateAvailability(self, Y: np.ndarray) -> np.ndarray:
+        if Y.shape != (self.m, self.n):
+            raise Exception('ProblemInstance: policy Y is of wrong shape')
+        
+        return np.hstack([self._calculateAvailabilityCol(j, Y[:, j]).reshape((self.m, 1)) for j in range(self.n)])
 
     def expectedRevenueCol(self, shift: int, y: np.ndarray) -> float:
         if y.shape[0] != self.m:
