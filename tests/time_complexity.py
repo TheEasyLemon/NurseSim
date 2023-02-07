@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 
 from ProblemInstance.ProblemInstance import ProblemInstance
 from ProblemSolver.ProblemSolver import ProblemSolver
+from ProblemSolver.hh1 import HH1
+from utils.random_pi import generate_random_pi
 
 # nxn problem size for expected revenue
 ER_SIZES = np.array([3, 5, 10, 13, 15])
@@ -18,6 +20,8 @@ ER_SIZES = np.array([3, 5, 10, 13, 15])
 OPT_SIZES = np.array([3, 4, 5, 6, 7, 8, 9, 10])
 # nxn problem size for optimal solution with dynamic programming
 DYN_SIZES = np.array([3, 5, 7, 9, 13, 15, 18])
+# nxn problem size for optimal solution with hh1 heuristic algorithm
+HH1_SIZES = np.array([3, 4, 5, 6, 8, 10, 12, 14, 16])
 # how many policies we test with a given ProblemInstance
 REPEATS = 5
 # how many ProblemInstances we test
@@ -35,11 +39,7 @@ def test_function(title: str, func, sizes: List[int], ones=False) -> None:
 
             start = time.perf_counter()
 
-            P = np.random.rand(m, n)
-            Q = np.random.rand(m, n)
-            R = np.random.rand(m, n) * 10
-            N = np.ones((1, m)) if ones else np.random.randint(1, m, size=(n, ))
-            pi = ProblemInstance(P, Q, R, N)
+            pi = generate_random_pi(m, n, ones=ones)
 
             for _ in range(REPEATS):
                 Y = np.random.randint(0, 2, size=(m, n))
@@ -75,10 +75,16 @@ def test_dynamic_solution():
         ps.dynamicPolicy()
     test_function('Optimal Dynamic Policy Calculation Time Complexity', func, DYN_SIZES, ones=True)
 
+def test_hh1_solution():
+    def func(pi: ProblemInstance, Y: np.ndarray) -> None:
+        HH1(pi)
+    test_function('Optimal HH1 Calculation Time Complexity', func, HH1_SIZES)
+
 if __name__ == '__main__':
     er_resp = input('Would you like to show time complexity for getting the expected revenue (Y/N)? ')
-    opt_resp = input('Would you like to show time complexity for getting the optimal solution (Y/N)? ')
-    dyn_resp = input('Would you like to show time complexity for getting the optimal solution using dynamic programming (Y/N)? ')
+    opt_resp = input('Would you like to show time complexity for getting the optimal solution by brute force search (Y/N)? ')
+    dyn_resp = input('Would you like to show time complexity for getting the optimal solution using dynamic programming (N_j = 1) (Y/N)? ')
+    hh1_resp = input('Would you like to show time complexity for getting a heuristic solution using HH1 (Y/N)? ')
 
     if er_resp.lower() == 'y':
         test_expected_revenue()
@@ -88,3 +94,6 @@ if __name__ == '__main__':
 
     if dyn_resp.lower() == 'y':
         test_dynamic_solution()
+
+    if hh1_resp.lower() == 'y':
+        test_hh1_solution()

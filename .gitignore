@@ -5,3 +5,10 @@ __pycache__/
 
 # VSCode files
 .vscode
+
+# Mac files
+.DS_Store
+
+# profiler outputs
+profile.html
+profile.json

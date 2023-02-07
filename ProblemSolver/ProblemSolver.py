@@ -2,7 +2,7 @@
 Provides the ProblemSolver class, finding the optimal policy for a given ProblemInstance.
 '''
 import numpy as np
-from typing import Generator
+from typing import Generator, List, Union
 
 from ProblemInstance.ProblemInstance import ProblemInstance
 
@@ -16,6 +16,8 @@ class ProblemSolver:
             yield np.array([int(k) for k in '{0:b}'.format(i).zfill(m * n)]).reshape(m, n)
 
     def _getFeasiblePolicies(self, m, n) -> Generator[np.ndarray, None, None]:
+        # turn into a col, make sure sum is >= N
+
         for i in range(2 ** (m * n)):
             Y = np.array([int(k) for k in '{0:b}'.format(i).zfill(m * n)]).reshape(m, n)
 
@@ -66,10 +68,13 @@ class ProblemSolver:
     def optimalPolicy(self) -> np.ndarray:
         return np.hstack([self.optimalColumn(i) for i in range(self.prob.n)])
     
-    def dynamicColumn(self, shift: int) -> np.ndarray:
-        m = self.prob.m
+    def dynamicColumn(self, shift: int, include: Union[List[int], None]=None) -> np.ndarray:
+        # include - the nurses we schedule
+        m = self.prob.m if include is None else len(include)
+        V = self.prob.V if include is None else self.prob.V[include, :]
+        P = self.prob.P if include is None else self.prob.P[include, :]
         best = np.zeros((m, 1)) # maps nurse index to the best we can do while scheduling backwards
-        best[m - 1] = self.prob.V[m - 1, shift] # always schedule the last nurse
+        best[m - 1] = V[m - 1, shift] # always schedule the last nurse
 
         policy = np.zeros((m, 1), dtype=np.int64)
         policy[m - 1] = 1 # always schedule the last nurse
@@ -78,7 +83,7 @@ class ProblemSolver:
         for i in range(m - 2, -1, -1):
             # we can either skip (put down 0) or schedule (1)
             skip = best[i + 1]
-            schedule = self.prob.V[i, shift] + (1 - self.prob.P[i, shift]) * best[i + 1]
+            schedule = V[i, shift] + (1 - P[i, shift]) * best[i + 1]
             if skip >= schedule:
                 policy[i] = 0
                 best[i] = skip

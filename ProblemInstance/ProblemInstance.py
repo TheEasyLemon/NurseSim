@@ -99,3 +99,7 @@ class ProblemInstance:
             raise Exception('ProblemInstance: policy Y is of wrong shape')
         
         return sum([self.expectedRevenueCol(j, Y[:, j]) for j in range(self.n)])
+    
+    def copy(self):
+        new_pi = ProblemInstance(self.P, self.Q, self.R, self.N)
+        return new_pi

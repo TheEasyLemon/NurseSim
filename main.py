@@ -33,7 +33,7 @@ def main():
     N = np.random.randint(1, n, size=(n, ))
     # N = np.array([3, 5, 4, 3, 2])
     pi = ProblemInstance(P, Q, R, N)
-    ps = ProblemSolver(pi)
+    # ps = ProblemSolver(pi)
     # Y = ps.optimalPolicy(optimize=True)
     # print(Y)
     # Y_new = ps

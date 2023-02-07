@@ -40,6 +40,17 @@ def limit_shifts(sample: np.ndarray, N: np.ndarray):
 
     return sample
 
+def limit_shifts_col(sample: np.ndarray, N: int):
+    n = 0
+    for i in range(sample.size):
+        if n >= N:
+            sample[i:] = 0
+            break
+        if sample[i] == 1:
+            n += 1
+
+    return sample
+
 def monte_carlo_expected_revenue(pi: ProblemInstance, Y: np.ndarray, alpha: float = 0.01, e: float = 0.005) -> float:
     h = pi.R.sum() # maximum revenue we can receive
     m, n = pi.P.shape
@@ -69,5 +80,38 @@ def monte_carlo_expected_revenue(pi: ProblemInstance, Y: np.ndarray, alpha: floa
 
     print(f'Estimated to be within [{estimate} +/- {e * h}] with {(1 - alpha) * 100}% confidence, exact method predicts {pi.expectedRevenue(Y)}')
 
+def monte_carlo_expected_revenue_col(pi: ProblemInstance, y: np.ndarray, shift: int, alpha: float = 0.01, e: float = 0.005) -> float:
+    h = pi.R[:, shift].sum()
+    m = pi.P.shape[0]
 
+    N = hoeffding_bound(e, alpha)
+
+    # print(f'Beginning Monte Carlo Expected Revenue simulation with {N} iterations on a ProblemInstance column.')
+
+    estimate = 0
+
+    P_est = np.zeros(m)
+    Q_est = np.zeros(m)
+
+    for _ in range(N):
+        # sample from P
+        P_sample = (np.random.rand(m) < pi.P[:, shift]).astype(np.int64)
+        P_est += P_sample
+        # sample from Q
+        Q_sample = (np.random.rand(m) < pi.Q[:, shift]).astype(np.int64)
+        Q_est += Q_sample
+        # combine with Y to see which shifts nurses are available for and which visible to them
+        Py_sample = P_sample * y
+        # limit shifts to N
+        Py_sample = limit_shifts_col(Py_sample, pi.N[shift])
+        # combine with Q to get which shifts fulfilled
+        fulfilled = Py_sample * Q_sample
+        # combine with R to get sample revenue
+        estimate += (fulfilled * pi.R[:, shift]).sum()
+
+    estimate /= N
+
+    # print(f'Estimated to be within [{estimate} +/- {e * h}] with {(1 - alpha) * 100}% confidence, exact method predicts {pi.expectedRevenueCol(shift, y)}')
+
+    return estimate
 
