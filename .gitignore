@@ -12,3 +12,10 @@ __pycache__/
 # profiler outputs
 profile.html
 profile.json
+
+# built executables
+/build
+
+# cython compiled objects
+*.c
+*.so

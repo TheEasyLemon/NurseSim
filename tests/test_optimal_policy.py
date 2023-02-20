@@ -16,6 +16,7 @@ from ProblemSolver.ProblemSolver import ProblemSolver
 
 from utils.monte_carlo import monte_carlo_expected_revenue_col
 from utils.random_pi import generate_random_pi
+from utils.col_aggregator import col_aggregator
 
 def generate_all_policies_col(m: int) -> Generator[np.ndarray, None, None]:
     # Generator for possible policies
@@ -39,11 +40,6 @@ def monte_carlo_optimal_policy_col(pi: ProblemInstance, shift: int):
 def formula_optimal_policy_col(pi: ProblemInstance, shift: int):
     ps = ProblemSolver(pi)
     return ps.optimalColumn(shift)
-
-def col_aggregator(col_func: any):
-    def optimal(pi: ProblemInstance):
-        return np.hstack([col_func(pi, i) for i in range(pi.n)])
-    return optimal
 
 monte_carlo_optimal_policy = col_aggregator(monte_carlo_optimal_policy_col)
 formula_optimal_policy = col_aggregator(formula_optimal_policy_col)

@@ -55,23 +55,6 @@ class TestProblemReader(unittest.TestCase):
             # this condition doesn't always hold!
             # np.testing.assert_allclose(op, dp)
             np.testing.assert_allclose(pi.expectedRevenue(op), pi.expectedRevenue(dp))
-
-    # next step: test using monte carlo to find max revenue, plot rank order of predicted (from dp, x)
-    # to MC revenue w/ error bounds
-    # create histogram of MC results for all policies, expect our DP solution to be all the way to the right
-
-    # Cythonize monte_carlo simulation, find a fast package? Analyze with Scalene
-    # https://hplgit.github.io/teamods/MC_cython/sphinx/main_MC_cython.html
-    # Still a lot of performance gain, try Cython with much additional information for the np.ndarray!
-    # Typing gives performance gains :)
-
-    # Also try Numba, a JIT compiler!
-    # https://numba.readthedocs.io/en/stable/user/5minguide.html
-
-    # Looks like Numba could be slow too...maybe try Julia?
-    # It could take a lot of work, but also Julia is really cool...
-    # I'm really liking where this article is going:
-    # https://juliabook.chkwon.net/book/montecarlo
     
 
 if __name__ == '__main__':

@@ -80,6 +80,8 @@ def monte_carlo_expected_revenue(pi: ProblemInstance, Y: np.ndarray, alpha: floa
 
     print(f'Estimated to be within [{estimate} +/- {e * h}] with {(1 - alpha) * 100}% confidence, exact method predicts {pi.expectedRevenue(Y)}')
 
+    return estimate
+
 def monte_carlo_expected_revenue_col(pi: ProblemInstance, y: np.ndarray, shift: int, alpha: float = 0.01, e: float = 0.005) -> float:
     h = pi.R[:, shift].sum()
     m = pi.P.shape[0]
