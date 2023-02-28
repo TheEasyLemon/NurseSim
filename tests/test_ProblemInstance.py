@@ -6,6 +6,7 @@ import unittest
 from ProblemReader.ProblemReader import loadProblemInstance
 from ProblemInstance.ProblemInstance import ProblemInstance
 from utils.monte_carlo import monte_carlo_expected_revenue
+from utils.random_pi import generate_random_pi
 
 class TestProblemInstance(unittest.TestCase):
     def test1_data(self):

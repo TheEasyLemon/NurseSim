@@ -84,13 +84,13 @@ class ProblemInstance:
        
         return A_col
     
-    def calculateAvailability(self, Y: np.ndarray) -> np.ndarray:
+    def calculateAvailability(self, Y: np.ndarray, cython=True) -> np.ndarray:
         if Y.shape != (self.m, self.n):
             raise Exception('ProblemInstance: policy Y is of wrong shape')
         
-        return np.hstack([self._calculateAvailabilityCol(j, Y[:, j]).reshape((self.m, 1)) for j in range(self.n)])
+        return np.hstack([np.array(self._calculateAvailabilityCol(j, Y[:, j], cython)).reshape((self.m, 1)) for j in range(self.n)])
 
-    def expectedRevenueCol(self, shift: int, y: np.ndarray, cython: bool) -> float:
+    def expectedRevenueCol(self, shift: int, y: np.ndarray, cython=True) -> float:
         if y.shape[0] != self.m:
             raise Exception(f'ProblemInstance: policy column y is of wrong shape, got {y.shape}')
 

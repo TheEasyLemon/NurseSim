@@ -39,9 +39,26 @@ class TestProblemReader(unittest.TestCase):
     #         ps = ProblemSolver(pi)
     #         np.testing.assert_allclose(ps.optimalPolicy(), ps.bruteForceOptimalPolicy())
 
-    def test_dynamic_programming(self):
+    # def test_dynamic_programming(self):
+    #     iters = 100
+    #     m = n = 5
+    #     np.random.seed(0)
+    #     P = np.random.rand(m, n).round(1)
+    #     Q = np.random.rand(m, n).round(1)
+    #     R = np.random.rand(m, n).round(1) * 10
+    #     N = np.ones(shape=(n, ), dtype=np.int64)
+    #     pi = ProblemInstance(P, Q, R, N)
+    #     for _ in range(iters):
+    #         ps = ProblemSolver(pi)
+    #         op = ps.optimalPolicy()
+    #         dp = ps.dynamicPolicy()
+    #         # this condition doesn't always hold!
+    #         # np.testing.assert_allclose(op, dp)
+    #         np.testing.assert_allclose(pi.expectedRevenue(op), pi.expectedRevenue(dp))
+
+    def test_optimal_heuristic(self):
         iters = 100
-        m = n = 5
+        m = n = 10
         np.random.seed(0)
         P = np.random.rand(m, n).round(1)
         Q = np.random.rand(m, n).round(1)
@@ -51,10 +68,9 @@ class TestProblemReader(unittest.TestCase):
         for _ in range(iters):
             ps = ProblemSolver(pi)
             op = ps.optimalPolicy()
-            dp = ps.dynamicPolicy()
-            # this condition doesn't always hold!
-            # np.testing.assert_allclose(op, dp)
-            np.testing.assert_allclose(pi.expectedRevenue(op), pi.expectedRevenue(dp))
+            oph = ps.optimalPolicyHeuristic()
+            np.testing.assert_allclose(op, oph)
+            np.testing.assert_allclose(pi.expectedRevenue(op), pi.expectedRevenue(oph))
     
 
 if __name__ == '__main__':

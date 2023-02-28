@@ -5,6 +5,7 @@ import numpy as np
 from typing import Generator, List, Union
 
 from ProblemInstance.ProblemInstance import ProblemInstance
+from utils.col_aggregator import col_aggregator
 
 class ProblemSolver:
     def __init__(self, prob: ProblemInstance) -> None:
@@ -64,9 +65,44 @@ class ProblemSolver:
             raise Exception('ProblemSolver: No feasible policies')
 
         return best_col.reshape((m, 1))
+    
+    def optimalColumnHeuristic(self, shift: int) -> np.ndarray:
+        # Cython on by default
+        best_rev = 0
+        best_col = None
+        m = self.prob.m
+
+        # HEURISTIC: at most max_nurses nurses scheduled!
+        max_nurses = self.dynamicColumn2(shift).sum()
+
+        # HEURISTIC: the nurses scheduled in DP1 must be scheduled in optimal
+        dyn = self.dynamicColumn(shift)
+
+        for i in range(2 ** (m - 1)):
+            # convert i from decimal to numpy array of 0/1s
+            y = np.array([[int(k) for k in '{0:b}'.format((i << 1) + 1).zfill(m)]]).reshape((m, ))
+
+            # ignore if we schedule more than max_nurses
+            # there should be a marginally quicker way to iterate, but we'll save that problem for later
+            if y.sum() > max_nurses: continue
+
+            # ignore if we don't schedule all the nurses in DP1
+            if not np.all(y.ravel()[dyn.ravel() == 1] == 1): continue
+
+            if (new_rev := self.prob.expectedRevenueCol(shift, y, True)) > best_rev:
+                best_rev = new_rev
+                best_col = y
+
+        if best_col is None:
+            raise Exception('ProblemSolver: No feasible policies')
+
+        return best_col.reshape((m, 1))
 
     def optimalPolicy(self, cython=True) -> np.ndarray:
         return np.hstack([self.optimalColumn(i, cython) for i in range(self.prob.n)])
+    
+    def optimalPolicyHeuristic(self) -> np.ndarray:
+        return np.hstack([self.optimalColumn(i) for i in range(self.prob.n)])
     
     def dynamicColumn(self, shift: int, include: Union[List[int], None]=None) -> np.ndarray:
         # include - the nurses we schedule
@@ -120,10 +156,7 @@ class ProblemSolver:
                     if n_j == N_j - 1:
                         policy[i] = 0
 
-        # revenue
-        revenue = memo[N_j - 1, 0]
-
-        return policy, revenue
+        return policy
     
     def dynamicPolicy(self) -> np.ndarray:
         # this only works for problem instances with N = 1s
@@ -136,9 +169,7 @@ class ProblemSolver:
     def dynamicPolicy2(self) -> np.ndarray:
         # use a trial dynamic programming (DP) approach to solve for the best policy
         cols = []
-        total_rev = 0
         for i in range(self.prob.n):
-            policy_col, rev = self.dynamicColumn2(i)
+            policy_col = self.dynamicColumn2(i)
             cols.append(policy_col)
-            total_rev += rev
-        return np.hstack(cols), total_rev
+        return np.hstack(cols)

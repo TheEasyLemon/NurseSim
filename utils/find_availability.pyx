@@ -78,11 +78,11 @@ cpdef calculateAvailabilityCol(long N, long m, long[:] y, double[:] p):
     for n in range(1, N):
         for i in range(n + 1, m): # for every nurse, starting after the entries guaranted to be 1
             # Use optimized C code
-            A[i, n] = A[i, 0] * get_flips(<int> m, <int> n, flip)
+            A[i, n] = A[i, 0] * get_flips(<int> i, <int> n, flip)
 
             # # keep this code around for readability
             # flips = 0 # keeps track of flips
-            # for tup in combinations(range(m), n):
+            # for tup in combinations(range(i), n):
             #     prod = 1
             #     for t in tup:
             #         prod *= flip[t]

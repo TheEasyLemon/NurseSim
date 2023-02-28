@@ -22,7 +22,7 @@ from utils.col_aggregator import col_aggregator
 ### Removers
 ###
 
-def remove_first_nurse(N_cur: np.ndarray, best_policy: np.ndarray) -> np.ndarray:
+def remove_first_nurse(N_cur: np.ndarray, best_policy: np.ndarray, pi: ProblemInstance, j: int) -> np.ndarray:
     '''
     Return a copy of N_cur with the first nurse removed that's also seen in best_policy.
 
@@ -39,26 +39,31 @@ def remove_most_valuable_nurse(N_cur: np.ndarray, best_policy: np.ndarray, pi: P
 
     Used for HH1MaxRev
     '''
-    k = pi.V[(N_cur & best_policy), j].argmax() # returns most valuable nurse
+    removable = np.where(N_cur & best_policy, pi.V[:, j], 0)
+    # if all zeros, then revert back to remove first
+    if np.all(removable == 0):
+        remove_first_nurse(N_cur, best_policy, pi, j)
+        return
+    k = removable.argmax() # returns most valuable nurse
     N_cur_copy = N_cur.copy()
-    N_cur[k] = 0 # remove nurse from considered nurses
+    N_cur_copy[k] = 0 # remove nurse from considered nurses
     return N_cur_copy
 
-def remove_all_nurses(N_cur: np.ndarray, best_policy: np.ndarray) -> np.ndarray:
+def remove_all_nurses(N_cur: np.ndarray, best_policy: np.ndarray, pi: ProblemInstance, j: int) -> np.ndarray:
     '''
-    Return a copy of N_cur with the first nurse removed that's also seen in best_policy.
+    Return a copy of N_cur with all nurses removed that's also seen in best_policy.
 
     Used for HH1RemAll
     '''
     N_cur_copy = N_cur.copy()
-    N_cur_copy[best_policy] = 0
+    N_cur_copy = N_cur & ~best_policy
     return N_cur_copy
 
 ###
 ### Modifiers
 ###
 
-def set_one_nurse_on(y_alt: np.ndarray, i: int) -> np.ndarray:
+def set_one_nurse_on(y_alt: np.ndarray, i: int, additional_nurses: np.ndarray) -> np.ndarray:
     '''
     Try adding each available nurse one at a time.
     
@@ -66,21 +71,21 @@ def set_one_nurse_on(y_alt: np.ndarray, i: int) -> np.ndarray:
     '''
     y_alt[i] = 1
 
-def set_nurse_ascending_on(y_alt: np.ndarray, i: int) -> np.ndarray:
+def set_nurse_ascending_on(y_alt: np.ndarray, i: int, additional_nurses: np.ndarray) -> np.ndarray:
     '''
     Try adding each available nurse one at a time, or including 0 to i.
 
     Used for HH1, HH1MaxRev, HH1RemAll
     '''
-    y_alt[:i + 1] = 1
+    y_alt[additional_nurses[:i + 1]] = 1
 
-def set_nurse_descending_on(y_alt: np.ndarray, i: int) -> np.ndarray:
+def set_nurse_descending_on(y_alt: np.ndarray, i: int, additional_nurses: np.ndarray) -> np.ndarray:
     '''
     Try adding each available nurse one at a time, or including i to end.
 
     Used for HH1NC
     '''
-    y_alt[:i + 1] = 1
+    y_alt[additional_nurses[i:]] = 1
 
 ###
 ### Helper functions
@@ -98,13 +103,13 @@ def search_policies(additional_nurses: np.ndarray, y_1: np.ndarray, pi: ProblemI
     for modify in modifiers:
         for i in range(len(additional_nurses)):
             y_alt = np.copy(y_1)
-            modify(y_alt, i)
+            modify(y_alt, i, additional_nurses)
             y_alt_rev = pi.expectedRevenueCol(j, y_alt)
             if y_alt_rev > best_additional_revenue:
                 best_additional_revenue = y_alt_rev
                 best_additional_policy = y_alt
 
-    return best_additional_policy, best_additional_revenue
+    return best_additional_policy
 
 def GenericHH1Col(pi: ProblemInstance, j: int, remover: Callable[[np.ndarray, np.ndarray], np.ndarray],
                   modifiers: List[Callable[[np.ndarray, int], np.ndarray]]) -> np.ndarray:
@@ -132,7 +137,7 @@ def GenericHH1Col(pi: ProblemInstance, j: int, remover: Callable[[np.ndarray, np
         # Step 2.2
         # Step 2.2.1: find first nurse we offer
         # shift j to, call it k, and remove from N_cur
-        N_cur = remover(N_cur, best_policy)
+        N_cur = remover(N_cur, best_policy, pi, j)
         active_indices = np.nonzero(N_cur)[0] # gets all indices where nurses available
         if active_indices.size == 0: break # if no more nurses to drop, break
 
@@ -148,7 +153,7 @@ def GenericHH1Col(pi: ProblemInstance, j: int, remover: Callable[[np.ndarray, np
 
         # Step 2.3
         # Step 2.3.1: define alternative policies and find the best one
-        best_additional_policy, _ = search_policies(additional_nurses, y_1, pi, j, modifiers)
+        best_additional_policy = search_policies(additional_nurses, y_1, pi, j, modifiers)
 
         # Step 2.4 - update solution and parameters
         # update best policy between additional and current best_policy
@@ -157,15 +162,16 @@ def GenericHH1Col(pi: ProblemInstance, j: int, remover: Callable[[np.ndarray, np
         if len(additional_nurses) > 0:
             n_cur += 1
 
-    return best_policy.reshape(best_policy.size)
+    return best_policy.reshape(best_policy.size, 1)
 
 def HH2Col(pi: ProblemInstance, j: int):
+    hh1 = GenericHH1Col(pi, j, remover=remove_first_nurse, modifiers=[set_one_nurse_on, set_nurse_ascending_on])
     hh1_singcom = GenericHH1Col(pi, j, remover=remove_first_nurse, modifiers=[set_one_nurse_on])
     hh1_maxrev = GenericHH1Col(pi, j, remover=remove_most_valuable_nurse, modifiers=[set_one_nurse_on])
     hh1_remall = GenericHH1Col(pi, j, remover=remove_all_nurses, modifiers=[set_one_nurse_on, set_nurse_ascending_on])
     hh1_nc = GenericHH1Col(pi, j, remover=remove_first_nurse, modifiers=[set_one_nurse_on, set_nurse_descending_on])
 
-    best_policy = max([hh1_singcom, hh1_maxrev, hh1_remall, hh1_nc], key=lambda y: pi.expectedRevenueCol(j, y))
+    best_policy = max([hh1, hh1_singcom, hh1_maxrev, hh1_remall, hh1_nc], key=lambda y: pi.expectedRevenueCol(j, y.reshape(y.size)))
     return best_policy
 
 ###
