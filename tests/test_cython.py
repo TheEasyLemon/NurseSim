@@ -48,9 +48,9 @@ if __name__ == '__main__':
     N = 200
     size = 12
 
-    # 200 replications of 10x1 takes ~2 seconds.
-    # 11x1 takes around 5.5 seconds.
-    # 12x1 takes around 13 seconds
+    # 200 replications of 10x1 takes ~1 second.
+    # 11x1 takes around 2.5 seconds.
+    # 12x1 takes around 8.8 seconds
     print(f'cython took {test_cython(N, size)} seconds.')
 
     # test_random_correctness()

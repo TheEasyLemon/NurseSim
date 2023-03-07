@@ -72,22 +72,22 @@ class ProblemSolver:
         best_col = None
         m = self.prob.m
 
-        # HEURISTIC: at most max_nurses nurses scheduled!
+        # HEURISTIC: at most max_nurses nurses scheduled, max_nurses from dynamic DP
         max_nurses = self.dynamicColumn2(shift).sum()
 
-        # HEURISTIC: the nurses scheduled in DP1 must be scheduled in optimal
-        dyn = self.dynamicColumn(shift)
+        # PROVED: the nurses scheduled in DP1 must be scheduled in optimal
+        dyn = self.dynamicColumn(shift).reshape(m)
+        # number of nurses we are free to change
+        free_nurses = m - dyn.sum()
 
-        for i in range(2 ** (m - 1)):
+        for i in range(2 ** free_nurses):
             # convert i from decimal to numpy array of 0/1s
-            y = np.array([[int(k) for k in '{0:b}'.format((i << 1) + 1).zfill(m)]]).reshape((m, ))
+            y_partial = np.array([[int(k) for k in '{0:b}'.format(i).zfill(free_nurses)]]).reshape(free_nurses)
+            y = dyn.copy()
+            y[dyn == 0] = y_partial
 
-            # ignore if we schedule more than max_nurses
-            # there should be a marginally quicker way to iterate, but we'll save that problem for later
+            # HEURISTIC
             if y.sum() > max_nurses: continue
-
-            # ignore if we don't schedule all the nurses in DP1
-            if not np.all(y.ravel()[dyn.ravel() == 1] == 1): continue
 
             if (new_rev := self.prob.expectedRevenueCol(shift, y, True)) > best_rev:
                 best_rev = new_rev

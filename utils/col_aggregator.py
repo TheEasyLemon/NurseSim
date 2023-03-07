@@ -12,3 +12,8 @@ def col_aggregator(col_func: Callable[[ProblemInstance, int], np.ndarray]):
     def optimal(pi: ProblemInstance):
         return np.hstack([col_func(pi, i) for i in range(pi.n)])
     return optimal
+
+def param_col_aggregator(col_func: Callable[[ProblemInstance, int, int], np.ndarray]):
+    def optimal(pi: ProblemInstance, param=None):
+        return np.hstack([col_func(pi, i, param) for i in range(pi.n)])
+    return optimal
