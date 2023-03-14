@@ -46,7 +46,7 @@ class ProblemSolver:
 
         return best_pol
 
-    def optimalColumn(self, shift: int, cython=True) -> np.ndarray:
+    def optimalColumn(self, shift: int) -> np.ndarray:
         best_rev = 0
         best_col = None
         m, n = self.prob.m, self.prob.n
@@ -57,7 +57,7 @@ class ProblemSolver:
             # convert i from decimal to numpy array of 0/1s
             y = np.array([[int(k) for k in '{0:b}'.format((i << 1) + 1).zfill(m)]]).reshape((m, ))
 
-            if (new_rev := self.prob.expectedRevenueCol(shift, y, cython)) > best_rev:
+            if (new_rev := self.prob.expectedRevenueCol(shift, y)) > best_rev:
                 best_rev = new_rev
                 best_col = y
 
@@ -67,9 +67,6 @@ class ProblemSolver:
         return best_col.reshape((m, 1))
     
     def optimalColumnHeuristic(self, shift: int) -> np.ndarray:
-        # Cython on by default
-        best_rev = 0
-        best_col = None
         m = self.prob.m
 
         # HEURISTIC: at most max_nurses nurses scheduled, max_nurses from dynamic DP
@@ -79,7 +76,12 @@ class ProblemSolver:
         dyn = self.dynamicColumn(shift).reshape(m)
         # number of nurses we are free to change
         free_nurses = m - dyn.sum()
+        if free_nurses == 0: return dyn
 
+        # setup search
+        best_rev = 0
+        best_col = dyn
+        
         for i in range(2 ** free_nurses):
             # convert i from decimal to numpy array of 0/1s
             y_partial = np.array([[int(k) for k in '{0:b}'.format(i).zfill(free_nurses)]]).reshape(free_nurses)
@@ -89,7 +91,7 @@ class ProblemSolver:
             # HEURISTIC
             if y.sum() > max_nurses: continue
 
-            if (new_rev := self.prob.expectedRevenueCol(shift, y, True)) > best_rev:
+            if (new_rev := self.prob.expectedRevenueCol(shift, y)) > best_rev:
                 best_rev = new_rev
                 best_col = y
 
@@ -98,8 +100,8 @@ class ProblemSolver:
 
         return best_col.reshape((m, 1))
 
-    def optimalPolicy(self, cython=True) -> np.ndarray:
-        return np.hstack([self.optimalColumn(i, cython) for i in range(self.prob.n)])
+    def optimalPolicy(self) -> np.ndarray:
+        return np.hstack([self.optimalColumn(i) for i in range(self.prob.n)])
     
     def optimalPolicyHeuristic(self) -> np.ndarray:
         return np.hstack([self.optimalColumn(i) for i in range(self.prob.n)])

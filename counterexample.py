@@ -41,7 +41,7 @@ def compare_hh_optimal(m: int, n: int) -> Tuple[np.ndarray, float]:
     )
 
 def analyze_hh1_optimal(m: int, n: int, verbose=False):
-    N = 50
+    N = 500
     total_shift_hh1 = np.zeros((m, n))
     total_rev_hh1 = 0
     total_shift_hh2 = np.zeros((m, n))
@@ -85,7 +85,7 @@ def analyze_hh1_optimal(m: int, n: int, verbose=False):
     return prop_rev_deviation_hh1, prop_rev_deviation_hh2, prop_rev_deviation_hm1
 
 def run_comparison_graph():
-    size = np.arange(3, 12)
+    size = np.arange(4, 5)
     size = size.reshape(size.size, 1)
     prop_dev = np.zeros((size.size, 3))
     for i, s in enumerate(size):
@@ -112,6 +112,6 @@ def display_comparison_graph():
 
 if __name__ == '__main__':
     run_comparison_graph()
-    display_comparison_graph()
+    # display_comparison_graph()
     
 

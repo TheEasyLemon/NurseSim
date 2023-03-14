@@ -13,35 +13,54 @@ cdef extern from "stdlib.h":
     void* malloc(size_t size)
     void free(void* ptr)
 
-cdef void generate_combinations(int n, int k, int start, int depth, int* combination, intptr_t combinations_size, double[:] flip, double* flips):
-    cdef int i
+cdef void generate_combinations(int n, int k, int start, int depth, int* combination, double[:] Py, double* prob):
+    cdef int i, j, combo_idx, zero_flag
     cdef double prod
     if depth == k:
         prod = 1
-        for i in range(k):
-            prod *= flip[combination[i]]
-        combinations_size += 1
-        flips[0] += prod
+        # index of combination
+        combo_idx = 0
+        zero_flag = 0
+        # these are the 1s
+        for i in range(n):
+            if combo_idx < k and i == combination[combo_idx]:
+                combo_idx += 1
+                if Py[i] == 0:
+                    zero_flag = 1
+                    break
+                prod *= Py[i]
+            else:
+                if Py[i] == 1:
+                    zero_flag = 1
+                    break
+                prod *= (1 - Py[i])
+        if zero_flag == 0:
+            prob[0] += prod
         return
     for i in range(start, n):
         combination[depth] = i
-        generate_combinations(n, k, i + 1, depth + 1, combination, combinations_size, flip, flips) 
+        generate_combinations(n, k, i + 1, depth + 1, combination, Py, prob) 
 
-cpdef double get_flips(int n, int k, double[:] flip):
-    # for every combination (nCk), where we choose from the list
-    # 0 to n - 1 inclusive, we take the indices at flip
-    # and multiply them all together. 
-    # we return the sum across all combinations.
+cpdef double get_availability(int n, int k, double[:] Py):
+    # Associated code in 
+    # for tup in combinations(range(i), n):
+    #     prob = 1
+    #     for k in range(i):
+    #         if k in tup:
+    #             prob *= Py[k]
+    #         else:
+    #             prob *= (1 - Py[k])
+    #     A[i, n] += prob
+
     cdef int* combination = <int*>malloc(k * sizeof(int))
-    cdef intptr_t combinations_size = 0
-    cdef double* flips = <double*>malloc(sizeof(double))
-    flips[0] = 0 # set to 0 to begin
+    cdef double* prob = <double*>malloc(sizeof(double))
+    prob[0] = 0 # set to 0 to begin
 
-    generate_combinations(n, k, 0, 0, combination, combinations_size, flip, flips)
+    generate_combinations(n, k, 0, 0, combination, Py, prob)
 
     free(combination)
 
-    return flips[0]
+    return prob[0]
 
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing
@@ -57,19 +76,11 @@ cpdef calculateAvailabilityCol(long N, long m, long[:] y, double[:] p):
       with the probability the shift will be available to that nurse
     '''
     cdef long n, i, j # type the loop indices
-    cdef double flips, prod
 
     cdef double[:, ::1] A = np.triu(np.ones((m, N)), 0) # the row gives the nurse, the column gives the availability when j shifts allowed
     cdef double[:] Py = np.zeros(m)
     for i in range(m):
         Py[i] = p[i] * y[i]
-
-    cdef double[:] flip = np.zeros(m)
-    for i in range(m):
-        if Py[i] == 1:
-            flip[i] = np.inf
-        else:
-            flip[i] = Py[i] / (1 - Py[i])
 
     # first fill in 0th column of A
     for i in range(1, m):
@@ -78,16 +89,7 @@ cpdef calculateAvailabilityCol(long N, long m, long[:] y, double[:] p):
     for n in range(1, N):
         for i in range(n + 1, m): # for every nurse, starting after the entries guaranted to be 1
             # Use optimized C code
-            A[i, n] = A[i, 0] * get_flips(<int> i, <int> n, flip)
-
-            # # keep this code around for readability
-            # flips = 0 # keeps track of flips
-            # for tup in combinations(range(i), n):
-            #     prod = 1
-            #     for t in tup:
-            #         prod *= flip[t]
-            #     flips += prod
-            # A[i, n] = A[i, 0] * flips
+            A[i, n] = get_availability(<int> i, <int> n, Py)
 
     cdef double[:] A_col = np.zeros(m)
     cdef double acc_sum

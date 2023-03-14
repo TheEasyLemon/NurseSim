@@ -157,7 +157,8 @@ def GenericHH1Col(pi: ProblemInstance, j: int, remover: Callable[[np.ndarray, np
 
         # Step 2.4 - update solution and parameters
         # update best policy between additional and current best_policy
-        best_policy = max(best_additional_policy, best_policy, key=lambda y: pi.expectedRevenueCol(j, y) if y is not None else 0)
+        best_policy = max(best_additional_policy, best_policy, key=lambda y: 0 if y is None else pi.expectedRevenueCol(j, y))
+        
         # update n_cur if we found some improvements
         if len(additional_nurses) > 0:
             n_cur += 1
