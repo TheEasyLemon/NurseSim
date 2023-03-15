@@ -12,10 +12,10 @@ def test_normal_speed(N, size):
     start = time.perf_counter()
 
     for _ in range(N):
-        pi = generate_random_pi(size, size, cython=False)
+        pi = generate_random_pi(size, 1, cython=False)
         ps = ProblemSolver(pi)
 
-        Y = ps.optimalColumnHeuristic(0)
+        Y = ps.optimalColumn(0)
 
     end = time.perf_counter()
     return end - start
@@ -24,10 +24,10 @@ def test_cython_speed(N, size):
     start = time.perf_counter()
 
     for _ in range(N):
-        pi = generate_random_pi(size, size, cython=True)
+        pi = generate_random_pi(size, 1, cython=True)
         ps = ProblemSolver(pi)
 
-        Y = ps.optimalColumnHeuristic(0)
+        Y = ps.optimalColumn(0)
 
     end = time.perf_counter()
     
@@ -35,9 +35,9 @@ def test_cython_speed(N, size):
 
 if __name__ == '__main__':
     N = 200
-    size = 12
+    size = 10
 
-    # print(f'normal took {test_normal_speed(N, size)} seconds.')
+    print(f'normal took {test_normal_speed(N, size)} seconds.')
 
     # 200 replications of 10x1 takes ~1 second.
     # 11x1 takes around 3.6 seconds.

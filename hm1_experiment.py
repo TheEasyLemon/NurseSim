@@ -22,32 +22,13 @@ efficient at eliminating possible moves.
 In this case, we'd hope that we could eliminate some nurses or some combinations of nurses,
 which might be very helpful. Let's see!
 
-3. Generate symbolic equations of revenue, see how the equation changes over time
-   Every time we add a nurse to the schedule, we guarantee that revenue increases. Is there a pattern?
-
-TODO: Add sympy and do this, limit N_j to be <= 5.
-
 Dawson Ren
 3/12/23
 '''
-from typing import Tuple
-from itertools import combinations
-
-import numpy as np
-import matplotlib.pyplot as plt
-from sympy import *
-from sympy import init_printing
-from sympy.matrices.dense import matrix_multiply_elementwise
-
-from ProblemSolver.hm1 import HM1_blank_slate, IterativeDeepening
+from ProblemSolver.hm1 import HM1
+from ProblemSolver.id import IterativeDeepening
 from ProblemSolver.ProblemSolver import ProblemSolver
 from utils.random_pi import generate_random_pi
-
-def latex_print(expr):
-    text_kwargs = dict(ha='center', va='center', fontsize=14, wrap=True)
-    plt.plot()
-    plt.text(0, 0, rf'${latex(expr)}$', **text_kwargs)
-    plt.show()
 
 def experiment_1():
     '''
@@ -59,9 +40,9 @@ def experiment_1():
     for i in range(max_iter):
         pi = generate_random_pi(m, m)
         ps = ProblemSolver(pi)
-        ps_sol = ps.optimalPolicyHeuristic()
+        ps_sol = ps.optimalPolicy()
         print('Optimal:\n', ps_sol)
-        hm1_sol = HM1_blank_slate(pi)
+        hm1_sol = HM1(pi, blank_slate=True)
         print('HM1:\n', hm1_sol)
         if pi.expectedRevenue(hm1_sol) < pi.expectedRevenue(ps_sol):
             print(f'Found inferior after {i} iterations:')
@@ -75,6 +56,8 @@ def experiment_1():
 def experiment_2():
     '''
     See if Iterative Deepening produces an optimal solution.
+
+    Answer: Yes, ID produces an optimal solution, for 1000 replications on m = 10.
     '''
     m = 14
     max_iter = 1
@@ -83,7 +66,7 @@ def experiment_2():
         print('Iteration:', i + 1)
         pi = generate_random_pi(m, m)
         ps = ProblemSolver(pi)
-        ps_sol = ps.optimalPolicyHeuristic()
+        ps_sol = ps.optimalPolicy()
         # print('Optimal:\n', ps_sol)
         hm1_sol = IterativeDeepening(pi)
         print('HM1:\n', hm1_sol)
@@ -94,53 +77,7 @@ def experiment_2():
             print('Optimal Revenue:', pi.expectedRevenue(ps_sol))
             return
 
-def experiment_3():
-    m = 5
-
-    # generate the revenue function for a given problem
-    pi = generate_random_pi(m, m)
-    shift = 0
-    N = pi.N[shift]
-    N = 1
-
-    # r = v * y * a
-    v = Matrix(symbols(f'v0:{m}')) # pi.V[:, shift].reshape(pi.m)
-    y = Matrix(symbols(f'y0:{m}'))
-    p = Matrix(symbols(f'p0:{m}')) # pi.P[:, shift].reshape(pi.m)
-    
-    # now, we calculate a
-    a = Matrix(np.zeros(pi.m))
-
-    # first N nurses get availability 1
-    for i in range(N):
-        a[i] = 1
-
-    # for N_j = 1
-    for i in range(1, pi.m):
-        a[i] += (1 - p[i - 1] * y[i - 1]) * a[i - 1]
-
-    # for N_j = 2 and above
-    for n in range(1, N):
-        for i in range(n + 1, pi.m):
-            for tup in combinations(range(i), n):
-                prob = 1
-                for k in range(i):
-                    if k in tup:
-                        prob *= p[k] * y[k]
-                    else:
-                        prob *= (1 - p[k] * y[k])
-                a[i] += prob
-
-    # enforce first N nurses get availability 1
-    for i in range(N):
-        a[i] = 1
-
-    vy = matrix_multiply_elementwise(v, y)
-    r = sum(matrix_multiply_elementwise(a, vy))
-    latex_print(r)
 
 if __name__ == '__main__':
-    init_printing()
     # experiment_1()
-    # experiment_2()
-    experiment_3()
+    experiment_2()

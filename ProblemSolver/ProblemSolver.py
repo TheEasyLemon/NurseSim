@@ -32,7 +32,7 @@ class ProblemSolver:
                     yield Y
 
     def bruteForceOptimalPolicy(self, optimize=False) -> np.ndarray:
-        best_rev = 0
+        best_rev = -1
         best_pol = None
         gen = self._getFeasiblePolicies(self.prob.m, self.prob.n) if optimize else self._getAllPolicies(self.prob.m, self.prob.n)
 
@@ -45,41 +45,19 @@ class ProblemSolver:
             raise Exception('ProblemSolver: No feasible policies')
 
         return best_pol
-
-    def optimalColumn(self, shift: int) -> np.ndarray:
-        best_rev = 0
-        best_col = None
-        m, n = self.prob.m, self.prob.n
-
-        # speedup: it's always advantageous to schedule the last nurse, assuming all revenue is non-negative
-        # use bitshifting to accomplish this
-        for i in range(2 ** (m - 1)):
-            # convert i from decimal to numpy array of 0/1s
-            y = np.array([[int(k) for k in '{0:b}'.format((i << 1) + 1).zfill(m)]]).reshape((m, ))
-
-            if (new_rev := self.prob.expectedRevenueCol(shift, y)) > best_rev:
-                best_rev = new_rev
-                best_col = y
-
-        if best_col is None:
-            raise Exception('ProblemSolver: No feasible policies')
-
-        return best_col.reshape((m, 1))
     
-    def optimalColumnHeuristic(self, shift: int) -> np.ndarray:
+    def optimalColumn(self, shift: int) -> np.ndarray:
         m = self.prob.m
-
-        # HEURISTIC: at most max_nurses nurses scheduled, max_nurses from dynamic DP
-        max_nurses = self.dynamicColumn2(shift).sum()
 
         # PROVED: the nurses scheduled in DP1 must be scheduled in optimal
         dyn = self.dynamicColumn(shift).reshape(m)
+
         # number of nurses we are free to change
         free_nurses = m - dyn.sum()
-        if free_nurses == 0: return dyn
+        if free_nurses == 0: return dyn.reshape((m, 1))
 
         # setup search
-        best_rev = 0
+        best_rev = -1
         best_col = dyn
         
         for i in range(2 ** free_nurses):
@@ -87,9 +65,6 @@ class ProblemSolver:
             y_partial = np.array([[int(k) for k in '{0:b}'.format(i).zfill(free_nurses)]]).reshape(free_nurses)
             y = dyn.copy()
             y[dyn == 0] = y_partial
-
-            # HEURISTIC
-            if y.sum() > max_nurses: continue
 
             if (new_rev := self.prob.expectedRevenueCol(shift, y)) > best_rev:
                 best_rev = new_rev
@@ -101,9 +76,6 @@ class ProblemSolver:
         return best_col.reshape((m, 1))
 
     def optimalPolicy(self) -> np.ndarray:
-        return np.hstack([self.optimalColumn(i) for i in range(self.prob.n)])
-    
-    def optimalPolicyHeuristic(self) -> np.ndarray:
         return np.hstack([self.optimalColumn(i) for i in range(self.prob.n)])
     
     def dynamicColumn(self, shift: int, include: Union[List[int], None]=None) -> np.ndarray:
@@ -139,7 +111,7 @@ class ProblemSolver:
 
         # iterate over N_j, increasing from 0 to N_j - 1 inclusive
         for n_j in range(N_j):
-            # iterate from i = m - 1 to 0
+            # iterate from last to first
             for i in range(m - 1, -1, -1):
                 # f_{i + 1}(n_j - 1)
                 rev_if_scheduled = memo[n_j - 1, i + 1] if n_j > 0 and i < m - 1 else 0
@@ -165,13 +137,9 @@ class ProblemSolver:
         if np.any(self.prob.N != 1):
             raise Exception('ProblemSolver: can only use dynamic policy on N = 1 for all')
 
-        # use a dynamic programming (DP) approach to solve for the best policy
+        # use a dynamic programming (DP) approach to solve for the best policy, ONLY for N_j = 1
         return np.hstack([self.dynamicColumn(i) for i in range(self.prob.n)])
     
     def dynamicPolicy2(self) -> np.ndarray:
         # use a trial dynamic programming (DP) approach to solve for the best policy
-        cols = []
-        for i in range(self.prob.n):
-            policy_col = self.dynamicColumn2(i)
-            cols.append(policy_col)
-        return np.hstack(cols)
+        return np.hstack([self.dynamicColumn2(i) for i in range(self.prob.n)])

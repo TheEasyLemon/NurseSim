@@ -97,7 +97,7 @@ def search_policies(additional_nurses: np.ndarray, y_1: np.ndarray, pi: ProblemI
     Search all alternative policies
     '''
     best_additional_policy = None
-    best_additional_revenue = 0
+    best_additional_revenue = -1
 
     # search through policies
     for modify in modifiers:

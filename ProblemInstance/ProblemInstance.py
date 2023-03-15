@@ -7,6 +7,7 @@ Dawson Ren, 11/14/22
 '''
 from typing import Union
 from itertools import combinations
+import sys
 
 import numpy as np
 import pyximport # for Cython interop
@@ -114,5 +115,11 @@ class ProblemInstance:
         new_pi = ProblemInstance(self.P.copy(), self.Q.copy(), self.R.copy(), self.N.copy())
         return new_pi
     
+    def _format_array(self, M) -> str:
+        return ','.join(map(str, M.ravel()))
+    
+    def _format_matrix(self, M) -> str:
+        return '\n'.join([self._format_array(M[i, :]) for i in range(self.m)])
+    
     def __str__(self) -> str:
-        return f'P:\n{self.P}\n\nV:\n{self.V}\n\nN: {self.N}'
+        return f'{self._format_matrix(self.P)}\n\n{self._format_matrix(self.Q)}\n\n{self._format_matrix(self.R)}\n\n{self._format_array(self.N)}'
