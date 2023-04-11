@@ -11,7 +11,7 @@ from ProblemSolver.id import IterativeDeepening
 from ProblemSolver.ProblemSolver import ProblemSolver
 from utils.random_pi import generate_random_pi
 
-def compare_to_optimal(m: int, n: int, rounds: int, heuristics=None, use_iterative_deepening=False) -> Tuple[np.ndarray, float]:
+def compare_to_optimal(m: int, n: int, rounds: int, heuristics=None, use_iterative_deepening=False) -> Tuple[np.ndarray, np.ndarray]:
     '''
     Inputs:
     - m: number of nurses
@@ -45,9 +45,11 @@ def compare_to_optimal(m: int, n: int, rounds: int, heuristics=None, use_iterati
 
             for i, h in enumerate(heuristics):
                 h_policy = h(pi)
-                rev_diff = rev_opt - pi.expectedRevenue(h_policy)
+                rev_heur = pi.expectedRevenue(h_policy)
+                rev_diff = rev_opt - rev_heur
                 revenue_deviation[i] += rev_diff
                 if rev_diff > 0: inaccuracies[i] += 1
+                if rev_diff < 0: print('FOUND IT:', rev_opt, rev_heur, optimal_policy, h_policy, pi, sep='\n')
         except Exception:
             print(traceback.format_exc())
             print(pi)

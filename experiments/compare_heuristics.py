@@ -12,8 +12,11 @@ from ProblemSolver.hm1 import HM1
 
 from utils.comparisons import compare_to_optimal
 
-HEURISTIC_NAMES = ['HH1', 'HH2', 'HM1']
-HEURISTICS = [HH1, HH2, HM1]
+def generate_hm1(k): return lambda pi: HM1(pi, k=k)
+
+HEURISTIC_NAMES = ['HM1-1', 'HM1-2', 'HM1-3', 'HM1-4']
+HEURISTICS = [generate_hm1(k) for k in range(1, 5)]
+FILENAME = 'hm1_1-4'
 
 
 def run_heuristic_comparison_graph(low: int, high: int, N: int, verbose=False):
@@ -35,12 +38,12 @@ def run_heuristic_comparison_graph(low: int, high: int, N: int, verbose=False):
         acc_rate[i, :] = accuracy_rate
         rev_dev[i, :] = revenue_deviation
 
-    np.savetxt('hh1_hh2_hm1_acc_rate.csv', np.hstack((size, acc_rate)))
-    np.savetxt('hh1_hh2_hm1_rev_dev.csv', np.hstack((size, rev_dev)))
+    np.savetxt(f'experiments/{FILENAME}_acc_rate.csv', np.hstack((size, acc_rate)))
+    np.savetxt(f'experiments/{FILENAME}_rev_dev.csv', np.hstack((size, rev_dev)))
 
 
 def display_heuristic_comparison_graph_accuracy_rate():
-    data = np.loadtxt('hh1_hh2_hm1_acc_rate.csv')
+    data = np.loadtxt(f'experiments/{FILENAME}_acc_rate.csv')
     size = data[:, 0]
     prop_dev = data[:, 1:]
     
@@ -53,7 +56,7 @@ def display_heuristic_comparison_graph_accuracy_rate():
     plt.show()
 
 def display_heuristic_comparison_graph_revenue_deviation():
-    data = np.loadtxt('hh1_hh2_hm1_rev_dev.csv')
+    data = np.loadtxt(f'experiments/{FILENAME}_rev_dev.csv')
     size = data[:, 0]
     prop_dev = data[:, 1:]
     
@@ -66,7 +69,7 @@ def display_heuristic_comparison_graph_revenue_deviation():
     plt.show()
 
 if __name__ == '__main__':
-    run_heuristic_comparison_graph(4, 10, 200, verbose=True)
+    # run_heuristic_comparison_graph(4, 10, 2000, verbose=True)
     display_heuristic_comparison_graph_accuracy_rate()
     display_heuristic_comparison_graph_revenue_deviation()
 

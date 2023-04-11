@@ -25,24 +25,28 @@ which might be very helpful. Let's see!
 Dawson Ren
 3/12/23
 '''
+import numpy as np
+import matplotlib.pyplot as plt
+
 from ProblemSolver.hm1 import HM1
 from ProblemSolver.id import IterativeDeepening
 from ProblemSolver.ProblemSolver import ProblemSolver
 from utils.random_pi import generate_random_pi
+from utils.comparisons import compare_to_optimal
 
 def experiment_1():
     '''
     Identify a failure of HM1.
     '''
-    m = 12
-    max_iter = 1
+    m = 10
+    max_iter = 100
 
     for i in range(max_iter):
-        pi = generate_random_pi(m, m)
+        pi = generate_random_pi(m, 1)
         ps = ProblemSolver(pi)
-        ps_sol = ps.optimalPolicy()
+        ps_sol = HM1(pi, k=2) # ps.optimalPolicy()
         print('Optimal:\n', ps_sol)
-        hm1_sol = HM1(pi, blank_slate=True)
+        hm1_sol = HM1(pi, k=1)
         print('HM1:\n', hm1_sol)
         if pi.expectedRevenue(hm1_sol) < pi.expectedRevenue(ps_sol):
             print(f'Found inferior after {i} iterations:')

@@ -19,7 +19,7 @@ from utils.col_aggregator import col_aggregator
 def HM1Col(pi: ProblemInstance, j: int, k=None, blank_slate=False):
     ps = ProblemSolver(pi)
     # optimal policy with N_j = 1
-    best = np.zeros(pi.m) if blank_slate else ps.dynamicColumn(j).reshape(pi.m)
+    best = np.zeros(pi.m, dtype=np.int64) if blank_slate else ps.dynamicColumn(j).reshape(pi.m)
     # get available nurses (not scheduled)
     available_nurses = np.arange(best.size)[best == 0]
     # loop termination condition
