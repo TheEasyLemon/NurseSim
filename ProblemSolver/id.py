@@ -1,7 +1,7 @@
 '''
 Iterative Deepening.
 
-We think that this is optimal. Evidence is 1000 replications perfectly on m = 10.
+Not optimal, slightly suboptimal. Found counter example, see experiments/id_counterexample.txt.
 
 1. Find optimal policy with N_j = 1.
 2. Consider all combinations to add to the policy for N_j = n.

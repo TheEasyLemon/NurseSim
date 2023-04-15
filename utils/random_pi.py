@@ -8,10 +8,20 @@ import numpy as np
 
 from ProblemInstance.ProblemInstance import ProblemInstance
 
-def generate_random_pi(m: int, n: int, ones=False, cython=True) -> ProblemInstance:
+def generate_random_pi(m: int, n: int, ones=False, cython=True, round=None) -> ProblemInstance:
+    '''
+    m: natural, the number of nurses
+    n: natural, the number of shifts
+    ones: boolean, whether N is ones (solvable in polynomial time)
+    cython: boolean, use Cython availability function (speedup by around 3x)
+    round: natural | None, number of places to round, if None then don't round
+    '''
     # generates a random ProblemInstance.
-    P = np.random.rand(m, n).round(1)
-    Q = np.random.rand(m, n).round(1)
-    R = np.random.rand(m, n).round(1) * 10
+    P = np.random.rand(m, n)
+    if round is not None: P = P.round(round)
+    Q = np.random.rand(m, n)
+    if round is not None: Q = Q.round(round)
+    R = np.random.rand(m, n) * 10
+    if round is not None: R = R.round(round)
     N = np.ones(n, dtype=np.int64) if ones else np.random.randint(1, m, size=(n, ), dtype=np.int64)
     return ProblemInstance(P, Q, R, N, cython)

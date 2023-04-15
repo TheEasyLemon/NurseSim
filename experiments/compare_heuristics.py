@@ -19,7 +19,7 @@ HEURISTICS = [generate_hm1(k) for k in range(1, 5)]
 FILENAME = 'hm1_1-4'
 
 
-def run_heuristic_comparison_graph(low: int, high: int, N: int, verbose=False):
+def run_heuristic_comparison_graph(low: int, high: int, N: int, verbose=False, save_txt=True):
     size = np.arange(low, high + 1)
     size = size.reshape(size.size, 1)
     acc_rate = np.zeros((size.size, len(HEURISTICS)))
@@ -28,7 +28,7 @@ def run_heuristic_comparison_graph(low: int, high: int, N: int, verbose=False):
     for i, s in enumerate(size):
         if verbose: print(f'Running {N} replications for size {int(s)}...')
 
-        accuracy_rate, revenue_deviation = compare_to_optimal(int(s), int(s), N, HEURISTICS, use_iterative_deepening=True)
+        accuracy_rate, revenue_deviation = compare_to_optimal(int(s), int(s), N, HEURISTICS)
         
         if verbose:
             for j, h_name in enumerate(HEURISTIC_NAMES):
@@ -38,8 +38,9 @@ def run_heuristic_comparison_graph(low: int, high: int, N: int, verbose=False):
         acc_rate[i, :] = accuracy_rate
         rev_dev[i, :] = revenue_deviation
 
-    np.savetxt(f'experiments/{FILENAME}_acc_rate.csv', np.hstack((size, acc_rate)))
-    np.savetxt(f'experiments/{FILENAME}_rev_dev.csv', np.hstack((size, rev_dev)))
+    if save_txt:
+        np.savetxt(f'experiments/{FILENAME}_acc_rate.csv', np.hstack((size, acc_rate)))
+        np.savetxt(f'experiments/{FILENAME}_rev_dev.csv', np.hstack((size, rev_dev)))
 
 
 def display_heuristic_comparison_graph_accuracy_rate():
