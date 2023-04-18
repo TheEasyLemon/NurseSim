@@ -6,6 +6,7 @@ Try out Mehrotra's suggestion on ordering.
 import numpy as np
 
 from ProblemSolver.ProblemSolver import ProblemSolver
+from ProblemReader.ProblemReader import loadProblemInstance
 from utils.random_pi import generate_random_pi
 
 def partition(lst):
@@ -26,27 +27,7 @@ def partition(lst):
 
     return lsts
 
-class PQ:
-    '''
-    Wrapper that helps with comparisons for theorem 3.3.
-    '''
-    def __init__(self, p, q):
-        self.p = p
-        self.q = q
-        self.pq = p * q
-        print(p, q, p * q)
-
-    def __lt__(self, other):
-        return (self.q < other.q) and (self.pq < other.pq)
-    
-    def __eq__(self, other):
-        p_better = self.p > other.p
-        q_better = self.q > other.q
-        pq_better = self.pq > other.pq
-        return ((p_better and not q_better and pq_better) or
-                (not p_better and q_better and not pq_better))
-
-def theorem_3_3():
+def theorem_3_3(m=10):
     '''
     Quicker elimination of nurses with runs. In other words,
     eliminate nurses 
@@ -57,20 +38,20 @@ def theorem_3_3():
     that is zero, and require that there are only zero components
     between the lth and kth component. Then, \delta_k > \delta_l
     if one of the following holds:
-    1. p_k > p_j and q_k > q_j
-    2. p_k < p_j and p_k q_k > p_j q_j
+    1. p_k > p_l and q_k > q_l
+    2. p_k < p_l and p_k q_k > p_l q_l
     '''
-    for _ in range(10):
-        pi = generate_random_pi(5, 1, round=2)
+    for _ in range(1):
+        print('start new')
+        pi = loadProblemInstance('experiments/theorem3_3_counterexample.txt') # generate_random_pi(m, 1, round=2)
         ps = ProblemSolver(pi)
-        dyn = ps.dynamicColumn(0)
+        dyn = ps.optimalColumn(0) # np.zeros(pi.m, dtype=np.int64)
+        print(dyn)
         available_nurses = np.arange(pi.m, dtype=np.int64)[dyn.ravel() == 0]
-        print(available_nurses, pi.m)
+        print('avail nurses:', available_nurses, pi.m)
 
         for lst in partition(available_nurses):
             if len(lst) == 1: continue
-
-            indices_ordered_by_pq = sorted(lst, key=lambda i: PQ(pi.P[i, 0], pi.Q[i, 0]))
 
             def turn_on_nurse_revenue(i):
                 turn_on = dyn.ravel().copy()
@@ -78,14 +59,17 @@ def theorem_3_3():
                 print(i, turn_on, pi.expectedRevenueCol(0, turn_on))
                 return pi.expectedRevenueCol(0, turn_on)
 
-            indices_ordered_by_rev = sorted(lst, key=turn_on_nurse_revenue, reverse=True)
-
-            print(indices_ordered_by_pq)
-            print(indices_ordered_by_rev)
-
-            print(pi)
-            
-            assert indices_ordered_by_pq == indices_ordered_by_rev
+            # get all successive pairs
+            for i, k in enumerate(lst):
+                for l in lst[i + 1:]:
+                    # check the condition
+                    if (pi.P[k, 0] > pi.P[l, 0] and pi.Q[k, 0] > pi.Q[l, 0]) or \
+                       (pi.P[k, 0] < pi.P[l ,0] and pi.P[k, 0] * pi.Q[k, 0] > pi.P[l, 0] * pi.Q[l, 0]):
+                        # check for violations of the expected result
+                        if turn_on_nurse_revenue(k) < turn_on_nurse_revenue(l):
+                            print(k, l)
+                            print(pi)
+                            raise Exception('Failed to meet criteria.')
 
 
 def theorem_3_6():
@@ -97,16 +81,10 @@ def theorem_3_6():
     '''
     pass
 
-def ordering_experiment():
-    '''
-    Create a policy. Order the policies by...?
-    '''
-    
-
 if __name__ == '__main__':
-    # theorem_3_3()
-    # ordering_experiment()
-    pi = generate_random_pi(3, 1, round=1)
-    print(pi)
-    ps = ProblemSolver(pi)
-    print(ps.optimalPolicy())
+    theorem_3_3(4)
+
+    # pi = generate_random_pi(3, 1, round=1)
+    # print(pi)
+    # ps = ProblemSolver(pi)
+    # print(ps.optimalPolicy())

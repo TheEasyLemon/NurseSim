@@ -48,10 +48,13 @@ of being in the state and round towards either 0 or 1.
 
 Dawson Ren, 4/12/23
 '''
+import random
 from typing import Tuple, Dict, List
 
+# State - (j, l)
+State = Tuple[int, int]
 # map state to action
-DynamicPolicy = Dict[Tuple[int, int], int]
+DynamicPolicy = Dict[State, int]
 # optimal action for each index, where the index
 # corresponds to j
 StaticPolicy = List[int]
@@ -69,63 +72,130 @@ class NurseRL:
         self.r = r
         self.n = n
 
-        self.v = p * q * r
+        self.v = q * r
 
         # States - see example.png for more clarity
-        self.S = [(j, l) for j in range(1, self.m + 2) for l in range(1, n + 1) if j + l > self.n]
-        self.S.append((self.m + 1, 0))
+        self.S = [(j, l) for j in range(1, self.m + 1) for l in range(1, n + 1) if j + l > self.n]
         
+        # S_plus includes terminal states
+        self.S_plus = [(j, l) for j in range(1, self.m + 2) for l in range(1, n + 1) if j + l > self.n]
+        self.S_plus.append((self.m + 1, 0))
 
-    def step(self, s: int, a: int) -> Tuple[Tuple[int, int], int, bool]:
+        # Actions - only 0, 1
+        self.A = [0, 1]
+
+        # Dynamics - see create_next_state()
+        self.next_state_map = self.create_next_state()
+
+    def create_next_state(self) -> Dict[Tuple[State, int], Tuple[List[float], List[Tuple[State, float]]]]:
         '''
-        Uses the dynamical system function p(s', r | s, a).
+        Maps the tuple (state, action) to a tuple of two lists. The first list is the probability
+        corresponding to the outcome at the same index of the same list. The second list contains the
+        reward and next state.
+
+        Example:
+        The return value ([0.2, 0.8], [((3, 2), 5), ((3, 3), 0)] means that there is a probability of 0.2
+        to transition to (3, 2) and gain 5 reward and a probability of 0.8 to transition to (3, 3) and
+        gain no reward.
+
+        Generally, tabulate the dynamics of the system, representing the function p(s', r | s, a).
         Note that the dynamics_flowchart.png is 1-indexed, while
         Python is 0-indexed.
+        '''
+        next_state_map = {}
 
-        Returns:
+        for j, l in self.S:
+            for a in self.A:
+                if a == 1:
+                    # the nurse chooses, the nurse doesn't choose
+                    probs = [self.p[j - 1], 1 - self.p[j - 1]]
+                    if l == 1:
+                        state_rewards = [((self.m + 1, 0), self.v[j - 1]), ((j + 1, 1), 0)]
+                    else:
+                        state_rewards = [((j + 1, l - 1), self.v[j - 1]), ((j + 1, l), 0)]
+                else:
+                    probs = [1]
+                    state_rewards = [((j + 1, l), 0)]
+
+                next_state_map[((j, l), a)] = (probs, state_rewards)
+
+        return next_state_map
+
+    def step(self, s: int, a: int) -> Tuple[State, float, bool]:
+        '''
+        Randomly advance from a current state with a given action.
+        Used for MC sampling.
+
+        Returns a tuple of:
         - s' - the state tuple [j, l]
         - r - the reward
         - terminated - whether or not we have reached the terminal state
         '''
-        j, l = s
+        probs, state_rewards = self.next_state_map[(s, a)]
+        idx = random.choices(range(len(probs)), weights=probs)[0]
 
-        next_j, next_l = j, l
-        reward = 0
-        terminated = False
+        next_state, reward = state_rewards[idx]
+        next_j, next_l = next_state
+        terminated = next_j == self.m + 1 or next_l == 0
 
-        if a == 1:
-            if l == 1:
-                # the nurse chooses the shift
-                if np.random.random() < self.p[j - 1]:
-                    next_j, next_l = self.m, 0
-                    reward = self.v[j - 1]
-                # the nurse doesn't choose the shift
-                else:
-                    next_j = j + 1
-            else:
-                # the nurse chooses the shift
-                if np.random.random() < self.p[j - 1]:
-                    next_j, next_l = j + 1, l - 1
-                    reward = self.v[j - 1]
-                # the nurse doesn't choose the shift
-                else:
-                    next_j = j + 1
-        else:
-            next_j = j + 1
-
-        if next_j == self.m or next_l == 0:
-            terminated = True
-
-        return (next_j, next_l), reward, terminated
+        return (next_state, reward, terminated)
     
-    def iteration(self) -> DynamicPolicy:
+    def iteration(self, gamma=1, max_iters=100, abs_tol=0.001) -> Tuple[DynamicPolicy, Dict[State, float]]:
         '''
         Perform value iteration on the MDP
         From Sutton, Barto 2017, Chapter 4.4
-        Return a dictionary mapping state to deterministic action.
+        Return a dictionary mapping state to deterministic action and the learned state-value function.
+
+        - gamma is a measure of farsightedness between 0 and 1.
+        - max_iters determines the number of iterations.
+        - abs_tol determines the absolute tolerance of the state value
+          estimates.
         '''
+        def state_action(s: State, a: int, V: List[float]):
+            '''
+            The state-action function. The expected value of
+            discounted reward.
+            '''
+            expected_reward = 0
+            probs, state_rewards = self.next_state_map[(s, a)]
+
+            for prob, state_reward in zip(probs, state_rewards):
+                new_state, reward = state_reward
+                expected_reward += prob * (reward + gamma * V[new_state])
+
+            return expected_reward
+
         # Initialize state values arbitrarily
-        V = [0 for _ in range(self.m)]
+        V = {s: 0 for s in self.S_plus}
+        # Value estimation
+        for _ in range(max_iters):
+            delta = 0
+
+            for s in self.S:
+                v = V[s]
+                # The policy improvement theorem
+                # V(s) = max_a q(s, a)
+                V[s] = max(state_action(s, a, V) for a in self.A)
+                delta = max(delta, abs(v - V[s]))
+
+            # Consider using relative tolerance
+            # or the Bellman error, the difference in the LHS and RHS of the
+            # Bellman equation
+            if delta < abs_tol: break
+
+        # Get the optimal policy
+        optimal_policy = {}
+
+        for s in self.S:
+            optimal_policy[s] = max(self.A, key=lambda a: state_action(s, a, V))
+
+        return optimal_policy, V
+    
+    def create_probability(self) -> Dict[State, float]:
+        '''
+        For each state in S+, return the probability of reaching that state.
+        '''
+
 
     def dynamic_to_static(self, dyn: DynamicPolicy) -> StaticPolicy:
         '''
