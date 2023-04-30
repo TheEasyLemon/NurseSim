@@ -8,11 +8,11 @@ import numpy as np
 
 from ProblemInstance.ProblemInstance import ProblemInstance
 
-def generate_random_pi(m: int, n: int, ones=False, cython=True, round=None, constant_revenue_per_shift=False) -> ProblemInstance:
+def generate_random_pi(m: int, n: int, Nj=None, cython=True, round=None, constant_revenue_per_shift=False) -> ProblemInstance:
     '''
     m: natural, the number of nurses
     n: natural, the number of shifts
-    ones: boolean, whether N is ones (solvable in polynomial time)
+    Nj: integer, the number of nurses required for each shift, if Nj=1 then solvable in polynomial time
     cython: boolean, use Cython availability function (speedup by around 3x)
     round: natural | None, number of places to round, if None then don't round
     constant_revenue_per_shift: have the same revenue for every nurse in a shift
@@ -25,5 +25,5 @@ def generate_random_pi(m: int, n: int, ones=False, cython=True, round=None, cons
     R = np.random.rand(m, n) * 10
     if round is not None: R = R.round(round)
     if constant_revenue_per_shift: R = R[0, :]
-    N = np.ones(n, dtype=np.int64) if ones else np.random.randint(1, m, size=(n, ), dtype=np.int64)
+    N = np.ones(n, dtype=np.int64) * Nj if Nj is not None else np.random.randint(1, m, size=(n, ), dtype=np.int64)
     return ProblemInstance(P, Q, R, N, cython)

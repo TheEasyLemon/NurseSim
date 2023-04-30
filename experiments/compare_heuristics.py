@@ -19,5 +19,5 @@ HEURISTICS = [MIP_BinaryY, MIP_ContinuousY]
 FILENAME = 'mip'
 
 if __name__ == '__main__':
-    create_heuristic_comparison_graph(3, 5, 100, HEURISTICS, HEURISTIC_NAMES, FILENAME, verbose=True)
+    create_heuristic_comparison_graph(3, 6, 100, HEURISTICS, HEURISTIC_NAMES, FILENAME, verbose=True)
     show_heuristic_comparison_graphs(HEURISTIC_NAMES, FILENAME)

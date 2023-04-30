@@ -39,7 +39,7 @@ def test_function(title: str, func, sizes: List[int], ones=False) -> None:
 
             start = time.perf_counter()
 
-            pi = generate_random_pi(m, n, ones=ones)
+            pi = generate_random_pi(m, n, Nj=1 if ones else None)
 
             for _ in range(REPEATS):
                 Y = np.random.randint(0, 2, size=(m, n))

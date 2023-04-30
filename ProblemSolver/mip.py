@@ -144,6 +144,7 @@ def solve_lp(r_sub, X_to_Y, P_val, Q_val, R_val, variables, binary_y, debug=Fals
     try:
         nrmp_model += lpSum([element.args[0] * sympy_to_pulp(element.args[1]) for element in Add.make_args(r_sub)])
     except:
+        print('ERROR CREATING OBJECTIVE FUNCTION')
         print(list(Add.make_args(r_sub)))
 
     # add constraints
@@ -164,9 +165,8 @@ def solve_lp(r_sub, X_to_Y, P_val, Q_val, R_val, variables, binary_y, debug=Fals
             )
 
     # msg=0 part suppresses output
-    # uses the CBC MILP Solver, COIN_OR Branch + Cut
-    # COIN_OR is a nonprofit OR foundation
-    nrmp_model.solve(PULP_CBC_CMD(msg=0))
+    solver = GUROBI_CMD(msg=0)
+    nrmp_model.solve(solver)
 
     # get the solution
     soln = np.zeros(m, dtype=np.int64)
